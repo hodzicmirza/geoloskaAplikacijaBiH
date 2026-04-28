@@ -1,8 +1,6 @@
 // Pojednostavljene granice Bosne i Hercegovine (GeoJSON, EPSG:4326)
 // Generalizovan poligon — dovoljan za vizuelni overlay.
-import type { FeatureCollection } from "geojson";
-
-const granice: FeatureCollection = {
+const granice = {
   type: "FeatureCollection",
   features: [
     {
