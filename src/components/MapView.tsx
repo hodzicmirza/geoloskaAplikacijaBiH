@@ -103,7 +103,10 @@ const MapView = () => {
       zIndex: 5,
     });
 
-    // Granice po entitetima
+    // Granice po entitetima (sa filter ref-om)
+    const filterRef = { current: filter as Filter };
+    (borderLayerRef as any).filterRef = filterRef;
+
     const borderLayer = new VectorLayer({
       source: new VectorSource({
         features: new GeoJSON().readFeatures(granice, {
@@ -114,15 +117,18 @@ const MapView = () => {
       style: (feat) => {
         const ent = feat.get("entity") as EntityCode;
         const meta = ENTITY_META[ent];
+        const f = filterRef.current;
+        if (f !== "ALL" && f !== ent) return undefined as any;
+        const [h, s, l] = meta.color.split(" ");
         return new Style({
           stroke: new Stroke({ color: `hsl(${meta.color})`, width: 2.5 }),
-          fill: new Fill({ color: `hsla(${meta.color.split(" ").join(", ")
-            .replace(/(\d+)%, (\d+)%/, "$1%, $2%")}, 0.08)` }),
+          fill: new Fill({ color: `hsla(${h}, ${s}, ${l}, 0.10)` }),
         });
       },
       zIndex: 10,
     });
     borderLayerRef.current = borderLayer;
+
 
     const viewExtent = transformExtent([14.5, 41.8, 21.5, 46.5], "EPSG:4326", "EPSG:3857");
 
