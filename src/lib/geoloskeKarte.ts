@@ -1,95 +1,98 @@
-import sarajevo from "@/assets/karta-sarajevo.jpg";
-import banjaluka from "@/assets/karta-banjaluka.jpg";
-import mostar from "@/assets/karta-mostar.jpg";
-import tuzla from "@/assets/karta-tuzla.jpg";
+// Grid sistem geoloških listova 1:100 000 koji pokriva BiH.
+// Svaka ćelija je 0.5° × 0.5° (geografski stepeni).
+//
+// === KAKO DODATI SVOJE KARTE ===
+// Postavi slike u folder:  src/assets/karte/
+// Imenuj ih po šablonu:    sheet-r{ROW}-c{COL}.jpg   (npr. sheet-r3-c5.jpg)
+//   ROW = 1..6   (sjever → jug)
+//   COL = 1..8   (zapad → istok)
+// Slika se automatski pojavljuje na odgovarajućoj ćeliji mreže.
 
 export type GeoUnit = {
-  color: string; // HSL string used inline for legend swatches
+  color: string;
   code: string;
   name: string;
   age: string;
 };
 
 export type GeoSheet = {
-  id: string;
-  name: string;
+  id: string;          // npr. "R3C5"
+  row: number;
+  col: number;
+  code: string;        // npr. "L33-127"
+  name: string;        // npr. "Sarajevo"
   region: string;
   scale: string;
   year: number;
   description: string;
-  /** [minLon, minLat, maxLon, maxLat] in EPSG:4326 */
+  /** [minLon, minLat, maxLon, maxLat] u EPSG:4326 */
   extent: [number, number, number, number];
-  imageUrl: string;
+  imageUrl?: string;   // undefined ako slika još nije priložena
   legend: GeoUnit[];
 };
 
-export const geoloskeKarte: GeoSheet[] = [
-  {
-    id: "sarajevo",
-    name: "List Sarajevo",
-    region: "Centralna Bosna",
-    scale: "1 : 100 000",
-    year: 1978,
-    description:
-      "Sektor centralne Bosne sa dinarskim borama, mezozojskim karbonatima i kvartarnim aluvijalnim naslagama doline Miljacke i Bosne.",
-    extent: [17.95, 43.6, 18.95, 44.2],
-    imageUrl: sarajevo,
-    legend: [
-      { color: "22 78% 52%", code: "T2", name: "Trijaski krečnjaci i dolomiti", age: "Srednji trijas" },
-      { color: "120 35% 45%", code: "J1", name: "Jurski klastiti i rožnaci", age: "Donja jura" },
-      { color: "45 75% 60%", code: "K2", name: "Kredni flišni sedimenti", age: "Gornja kreda" },
-      { color: "200 25% 55%", code: "Q", name: "Aluvijalne naslage", age: "Kvartar" },
-    ],
-  },
-  {
-    id: "banjaluka",
-    name: "List Banja Luka",
-    region: "Sjeverozapadna Bosna",
-    scale: "1 : 100 000",
-    year: 1976,
-    description:
-      "Prelaz iz unutrašnjih Dinarida u Panonski basen — neogeni klastiti, ofiolitni kompleksi i pliocenske terase Vrbasa.",
-    extent: [16.85, 44.55, 17.85, 45.15],
-    imageUrl: banjaluka,
-    legend: [
-      { color: "16 65% 50%", code: "Ng", name: "Neogeni pješčari i lapori", age: "Miocen" },
-      { color: "0 55% 38%", code: "Of", name: "Ofiolitni melanž", age: "Jura–kreda" },
-      { color: "35 30% 70%", code: "Pl", name: "Pliocenske terase", age: "Pliocen" },
-      { color: "200 25% 55%", code: "Q", name: "Aluvijum Vrbasa", age: "Kvartar" },
-    ],
-  },
-  {
-    id: "mostar",
-    name: "List Mostar",
-    region: "Hercegovina",
-    scale: "1 : 100 000",
-    year: 1975,
-    description:
-      "Visoki krš Hercegovine — debele serije krednih i jurskih krečnjaka sa razvijenim kraškim formama, poljima i ponorima.",
-    extent: [17.55, 43.1, 18.55, 43.7],
-    imageUrl: mostar,
-    legend: [
-      { color: "200 30% 70%", code: "K1", name: "Donjokredni krečnjaci", age: "Donja kreda" },
-      { color: "200 20% 50%", code: "J3", name: "Gornjojurski dolomiti", age: "Gornja jura" },
-      { color: "30 50% 65%", code: "E", name: "Eocenski fliš", age: "Eocen" },
-      { color: "45 60% 80%", code: "Q", name: "Crvenice i naplavine", age: "Kvartar" },
-    ],
-  },
-  {
-    id: "tuzla",
-    name: "List Tuzla",
-    region: "Sjeveroistočna Bosna",
-    scale: "1 : 100 000",
-    year: 1980,
-    description:
-      "Tuzlanski basen sa neogenim soljenim sedimentima, miocenskim laporima i ležištima kamene soli — geološki specifičan po sinklinalnim strukturama.",
-    extent: [18.4, 44.25, 19.4, 44.85],
-    imageUrl: tuzla,
-    legend: [
-      { color: "330 30% 75%", code: "Ms", name: "Miocenski salinski sedimenti", age: "Miocen" },
-      { color: "45 80% 60%", code: "Mg", name: "Glinoviti lapori", age: "Miocen" },
-      { color: "10 70% 50%", code: "Vu", name: "Vulkanoklastiti", age: "Oligo–miocen" },
-      { color: "55 70% 80%", code: "Q", name: "Aluvijum Spreče", age: "Kvartar" },
-    ],
-  },
+// Geografski okvir mreže (pokriva cijelu BiH + malo zalihe)
+export const GRID_ORIGIN_LON = 15.5;   // zapad
+export const GRID_ORIGIN_LAT = 45.5;   // sjever (vrh)
+export const CELL_SIZE = 0.5;          // stepeni
+export const GRID_COLS = 8;
+export const GRID_ROWS = 6;
+
+// Automatsko učitavanje svih slika iz src/assets/karte/
+const imageModules = import.meta.glob("../assets/karte/sheet-r*-c*.{jpg,jpeg,png}", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+const imageByCell: Record<string, string> = {};
+for (const [path, url] of Object.entries(imageModules)) {
+  const m = path.match(/sheet-r(\d+)-c(\d+)/);
+  if (m) imageByCell[`r${m[1]}c${m[2]}`] = url;
+}
+
+// Imenovani listovi (možeš dopuniti). Ako nije naveden, koristi se generički naziv.
+const NAMED: Record<string, { name: string; code: string; region: string }> = {
+  r2c4: { name: "Banja Luka", code: "L33-119", region: "Sjeverozapadna Bosna" },
+  r3c7: { name: "Tuzla",      code: "L33-122", region: "Sjeveroistočna Bosna" },
+  r4c6: { name: "Sarajevo",   code: "L33-127", region: "Centralna Bosna" },
+  r5c5: { name: "Mostar",     code: "L33-132", region: "Hercegovina" },
+};
+
+const DEFAULT_LEGEND: GeoUnit[] = [
+  { color: "200 30% 70%", code: "K",  name: "Kredni krečnjaci",      age: "Kreda" },
+  { color: "22 78% 52%",  code: "T",  name: "Trijaski dolomiti",     age: "Trijas" },
+  { color: "120 35% 45%", code: "J",  name: "Jurski klastiti",       age: "Jura" },
+  { color: "45 75% 60%",  code: "E",  name: "Eocenski fliš",         age: "Eocen" },
+  { color: "200 25% 55%", code: "Q",  name: "Kvartarne naslage",     age: "Kvartar" },
 ];
+
+export const geoloskeKarte: GeoSheet[] = (() => {
+  const out: GeoSheet[] = [];
+  for (let r = 1; r <= GRID_ROWS; r++) {
+    for (let c = 1; c <= GRID_COLS; c++) {
+      const key = `r${r}c${c}`;
+      const minLon = GRID_ORIGIN_LON + (c - 1) * CELL_SIZE;
+      const maxLon = minLon + CELL_SIZE;
+      const maxLat = GRID_ORIGIN_LAT - (r - 1) * CELL_SIZE;
+      const minLat = maxLat - CELL_SIZE;
+      const named = NAMED[key];
+      out.push({
+        id: `R${r}C${c}`,
+        row: r,
+        col: c,
+        code: named?.code ?? `BH-R${r}C${c}`,
+        name: named?.name ?? `List R${r}-C${c}`,
+        region: named?.region ?? "Bosna i Hercegovina",
+        scale: "1 : 100 000",
+        year: 1978,
+        description: named
+          ? `Geološki list ${named.name} — sektor ${named.region}.`
+          : "Sektor mreže 1:100 000. Skenirani list još nije priložen.",
+        extent: [minLon, minLat, maxLon, maxLat],
+        imageUrl: imageByCell[key],
+        legend: DEFAULT_LEGEND,
+      });
+    }
+  }
+  return out;
+})();
