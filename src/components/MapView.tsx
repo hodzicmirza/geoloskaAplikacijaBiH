@@ -166,13 +166,11 @@ const MapView = () => {
   useEffect(() => {
     const layer = borderLayerRef.current;
     if (!layer) return;
-    const src = layer.getSource();
-    src?.getFeatures().forEach(f => {
-      const ent = f.get("entity") as EntityCode;
-      const visible = filter === "ALL" || filter === ent;
-      f.setStyle(visible ? undefined : new Style({}));
-    });
+    const ref = (borderLayerRef as any).filterRef;
+    if (ref) ref.current = filter;
+    layer.changed();
   }, [filter]);
+
 
   return (
     <div className="relative w-full h-screen bg-gradient-parchment overflow-hidden">
