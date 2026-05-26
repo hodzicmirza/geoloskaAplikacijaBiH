@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Calendar, Ruler } from "lucide-react";
+import { X, MapPin, Calendar, Ruler, Download, ImageOff } from "lucide-react";
 import type { GeoSheet } from "@/lib/geoloskeKarte";
 import { useEffect } from "react";
 
@@ -14,6 +14,24 @@ const SheetModal = ({ sheet, onClose }: Props) => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const handleDownload = async () => {
+    if (!sheet?.imageUrl) return;
+    try {
+      const res = await fetch(sheet.imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${sheet.code}_${sheet.name.replace(/\s+/g, "-")}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -33,20 +51,36 @@ const SheetModal = ({ sheet, onClose }: Props) => {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image side */}
             <div className="relative bg-foreground/5 flex items-center justify-center p-4 lg:p-6 max-h-[50vh] lg:max-h-[92vh]">
-              <img
-                src={sheet.imageUrl}
-                alt={`Geološki list ${sheet.name}`}
-                loading="lazy"
-                className="max-w-full max-h-full object-contain rounded shadow-soft"
-              />
+              {sheet.imageUrl ? (
+                <img
+                  src={sheet.imageUrl}
+                  alt={`Geološki list ${sheet.name}`}
+                  loading="lazy"
+                  className="max-w-full max-h-full object-contain rounded shadow-soft"
+                />
+              ) : (
+                <div className="text-center px-6 py-12 text-muted-foreground">
+                  <ImageOff size={48} className="mx-auto mb-4 opacity-50" />
+                  <p className="font-serif text-xl">Sken nije priložen</p>
+                  <p className="mt-2 text-xs font-mono">
+                    Dodaj sliku <span className="text-primary">src/assets/karte/sheet-r{sheet.row}-c{sheet.col}.jpg</span>
+                  </p>
+                </div>
+              )}
               <div className="absolute top-4 left-4 font-mono text-[10px] tracking-[0.25em] uppercase text-primary/90 bg-card/90 px-2.5 py-1 rounded">
-                Skenirani list
+                {sheet.code}
               </div>
+              {sheet.imageUrl && (
+                <button
+                  onClick={handleDownload}
+                  className="absolute bottom-4 right-4 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-elegant hover:bg-primary/90 transition-colors text-sm font-mono uppercase tracking-wider"
+                >
+                  <Download size={14} /> Preuzmi
+                </button>
+              )}
             </div>
 
-            {/* Details side */}
             <div className="flex flex-col overflow-y-auto bg-gradient-parchment">
               <div className="p-6 lg:p-8 border-b border-border">
                 <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-primary/80 mb-2">
@@ -62,11 +96,10 @@ const SheetModal = ({ sheet, onClose }: Props) => {
                 <div className="mt-5 grid grid-cols-3 gap-3 text-xs">
                   <Meta icon={<Ruler size={14} />} label="Razmjera" value={sheet.scale} />
                   <Meta icon={<Calendar size={14} />} label="Godina" value={String(sheet.year)} />
-                  <Meta icon={<MapPin size={14} />} label="Sektor" value={sheet.id.toUpperCase()} />
+                  <Meta icon={<MapPin size={14} />} label="Šifra" value={sheet.code} />
                 </div>
               </div>
 
-              {/* Legend */}
               <div className="p-6 lg:p-8">
                 <h3 className="font-serif text-lg font-semibold text-foreground mb-4 flex items-baseline gap-3">
                   Tumač geoloških jedinica
@@ -102,7 +135,6 @@ const SheetModal = ({ sheet, onClose }: Props) => {
               </div>
             </div>
 
-            {/* Close button */}
             <button
               onClick={onClose}
               aria-label="Zatvori"
