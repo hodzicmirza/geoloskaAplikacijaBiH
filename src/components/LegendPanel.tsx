@@ -14,24 +14,23 @@ const LegendPanel = ({ sheets, onSelect }: Props) => {
   return (
     <aside
       className={cn(
-        "absolute right-4 sm:right-6 bottom-6 z-20 w-[280px] sm:w-[320px]",
-        "bg-card/95 backdrop-blur border border-border rounded-lg shadow-elegant",
-        "transition-all duration-300"
+        "absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-20 w-[200px] sm:w-[220px]",
+        "bg-card/95 backdrop-blur border border-border rounded-lg shadow-elegant"
       )}
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        className="w-full flex items-center justify-between px-3 py-2 text-left"
       >
         <span className="flex items-center gap-2">
-          <Layers size={16} className="text-primary" />
-          <span className="font-serif text-sm font-semibold">Dostupni listovi</span>
-          <span className="font-mono text-[10px] tracking-wider text-muted-foreground">
-            {sheets.length}
+          <Layers size={12} className="text-primary" />
+          <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+            Listovi
           </span>
+          <span className="font-mono text-[10px] text-muted-foreground/70">{sheets.length}</span>
         </span>
         <ChevronUp
-          size={16}
+          size={14}
           className={cn("text-muted-foreground transition-transform", !open && "rotate-180")}
         />
       </button>
