@@ -13,12 +13,13 @@ import Polygon from "ol/geom/Polygon";
 import { Style, Stroke, Fill, Text } from "ol/style";
 import { fromLonLat, transformExtent, toLonLat } from "ol/proj";
 import "ol/ol.css";
-import { Info } from "lucide-react";
+import { Info, ChevronUp } from "lucide-react";
 import { geoloskeKarte, type GeoSheet } from "@/lib/geoloskeKarte";
 import granice, { ENTITY_META, type EntityCode } from "@/lib/granice";
 import SheetModal from "./SheetModal";
 import LegendPanel from "./LegendPanel";
 import AboutModal from "./AboutModal";
+import { cn } from "@/lib/utils";
 
 type Filter = "ALL" | EntityCode;
 
@@ -40,6 +41,7 @@ const MapView = () => {
   const [hoverName, setHoverName] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [entitiesOpen, setEntitiesOpen] = useState(false);
 
   const handlePointer = useCallback((e: any) => {
     const [lon, lat] = toLonLat(e.coordinate);
@@ -56,7 +58,6 @@ const MapView = () => {
     if (hovered.current) setActive(hovered.current);
   }, []);
 
-  // Build grid + sheet vector layer (cells outline + labels)
   const gridFeatures = useMemo(() => {
     return geoloskeKarte.map(s => {
       const [a, b, c, d] = s.extent;
@@ -70,7 +71,6 @@ const MapView = () => {
   useEffect(() => {
     if (!mapEl.current) return;
 
-    // Rasterski overlay-i (samo gdje postoji slika)
     const imgLayers = geoloskeKarte
       .filter(s => s.imageUrl)
       .map(sheet => new ImageLayer({
@@ -82,7 +82,6 @@ const MapView = () => {
         }),
       }));
 
-    // Mreža listova (granice ćelija + oznake)
     const gridLayer = new VectorLayer({
       source: new VectorSource({ features: gridFeatures }),
       style: (feat) => {
@@ -103,7 +102,6 @@ const MapView = () => {
       zIndex: 5,
     });
 
-    // Granice po entitetima (sa filter ref-om)
     const filterRef = { current: filter as Filter };
     (borderLayerRef as any).filterRef = filterRef;
 
@@ -128,7 +126,6 @@ const MapView = () => {
       zIndex: 10,
     });
     borderLayerRef.current = borderLayer;
-
 
     const viewExtent = transformExtent([14.5, 41.8, 21.5, 46.5], "EPSG:4326", "EPSG:3857");
 
@@ -162,7 +159,6 @@ const MapView = () => {
     };
   }, [handlePointer, handleClick, gridFeatures]);
 
-  // Apply entity filter
   useEffect(() => {
     const layer = borderLayerRef.current;
     if (!layer) return;
@@ -171,68 +167,74 @@ const MapView = () => {
     layer.changed();
   }, [filter]);
 
-
   return (
     <div className="relative w-full h-screen bg-gradient-parchment overflow-hidden">
       <div ref={mapEl} className="absolute inset-0" aria-label="Geološka karta Bosne i Hercegovine" />
 
-      {/* Header */}
+      {/* Kompaktan header */}
       <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-        <div className="px-6 sm:px-10 pt-6 pb-10 bg-gradient-to-b from-background/95 via-background/70 to-transparent">
-          <div className="pointer-events-auto max-w-5xl flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-primary/80 mb-2">
-                Geološki zavod · Arhiv listova
+        <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-5 bg-gradient-to-b from-background/95 via-background/60 to-transparent">
+          <div className="pointer-events-auto flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] sm:text-[10px] tracking-[0.25em] uppercase text-primary/80">
+                Geološki zavod
               </p>
-              <h1 className="font-serif text-3xl sm:text-5xl font-semibold leading-[1.05] text-foreground">
-                Osnovna geološka karta
-                <span className="block text-primary italic">Bosne i Hercegovine</span>
+              <h1 className="font-serif text-base sm:text-xl font-semibold leading-tight text-foreground truncate">
+                Osnovna geološka karta <span className="text-primary italic">BiH</span>
               </h1>
-              <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-2xl">
-                Razmjera 1 : 100 000 — mreža listova prikazana je preko granica entiteta.
-                Klikni na bilo koji list za uvećan sken i tumač geoloških jedinica.
+              <p className="hidden sm:block mt-0.5 text-[11px] text-muted-foreground">
+                1 : 100 000 — klikni list za detalje
               </p>
             </div>
             <button
               onClick={() => setAboutOpen(true)}
               aria-label="O aplikaciji"
-              className="shrink-0 w-10 h-10 rounded-full bg-card border border-border hover:border-primary hover:text-primary transition-colors flex items-center justify-center shadow-soft"
+              className="shrink-0 w-9 h-9 rounded-full bg-card border border-border hover:border-primary hover:text-primary transition-colors flex items-center justify-center shadow-soft"
             >
-              <Info size={18} />
+              <Info size={16} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Entity filter */}
-      <div className="absolute top-44 sm:top-48 left-4 sm:left-6 z-20 bg-card/95 backdrop-blur border border-border rounded-lg shadow-elegant p-2">
-        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground px-2 pt-1 pb-2">
-          Entiteti
-        </p>
-        <div className="flex flex-col gap-1">
-          {FILTERS.map(f => {
-            const active = filter === f.value;
-            const color = f.value === "ALL" ? "20 40% 30%" : ENTITY_META[f.value as EntityCode].color;
-            return (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-serif transition-colors ${
-                  active ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground"
-                }`}
-              >
-                <span className="w-3 h-3 rounded-sm border border-foreground/30" style={{ backgroundColor: `hsl(${color})` }} />
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Entiteti — donji lijevi ugao, collapsible */}
+      <aside className="absolute left-3 sm:left-4 bottom-3 sm:bottom-4 z-20 w-[180px] sm:w-[200px] bg-card/95 backdrop-blur border border-border rounded-lg shadow-elegant">
+        <button
+          onClick={() => setEntitiesOpen(v => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 text-left"
+        >
+          <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+            Entiteti
+          </span>
+          <ChevronUp size={14} className={cn("text-muted-foreground transition-transform", !entitiesOpen && "rotate-180")} />
+        </button>
+        {entitiesOpen && (
+          <div className="flex flex-col gap-0.5 px-2 pb-2">
+            {FILTERS.map(f => {
+              const isActive = filter === f.value;
+              const color = f.value === "ALL" ? "20 40% 30%" : ENTITY_META[f.value as EntityCode].color;
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => setFilter(f.value)}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-serif transition-colors",
+                    isActive ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground"
+                  )}
+                >
+                  <span className="w-2.5 h-2.5 rounded-sm border border-foreground/30 shrink-0" style={{ backgroundColor: `hsl(${color})` }} />
+                  <span className="truncate">{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </aside>
 
       {hoverName && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-fade-in-up">
-          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-elegant font-mono text-xs tracking-wider uppercase">
-            ▶ {hoverName} — klikni za detalje
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-fade-in-up px-3">
+          <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full shadow-elegant font-mono text-[10px] sm:text-xs tracking-wider uppercase whitespace-nowrap">
+            ▶ {hoverName}
           </div>
         </div>
       )}
