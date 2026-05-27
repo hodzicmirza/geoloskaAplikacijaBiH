@@ -100,7 +100,15 @@
   }
 }
 
-/* Keep OL controls themed */
+/* Keep OL controls themed + ispod headera */
+.ol-zoom {
+  top: 5.5rem !important;
+  left: 0.75rem !important;
+  z-index: 25;
+}
+@media (min-width: 640px) {
+  .ol-zoom { top: 6rem !important; left: 1rem !important; }
+}
 .ol-control button {
   background-color: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
@@ -112,3 +120,4 @@
   background: hsl(var(--card) / 0.85) !important;
   color: hsl(var(--muted-foreground)) !important;
 }
+
