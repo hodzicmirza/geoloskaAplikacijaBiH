@@ -84,6 +84,13 @@ const entityBBoxes: Array<[number, number, number, number]> = (granice as any).f
 const cellIntersectsBiH = (a: number, b: number, c: number, d: number) =>
   entityBBoxes.some(([x1, y1, x2, y2]) => !(c < x1 || a > x2 || d < y1 || b > y2));
 
+// Ručno isključene ćelije (more / izvan BiH u donjem lijevom L obliku)
+const EXCLUDED = new Set([
+  "r3c1", "r4c1", "r5c1", "r6c1",
+  "r5c2", "r5c3",
+  "r6c2", "r6c3", "r6c4",
+]);
+
 export const geoloskeKarte: GeoSheet[] = (() => {
   const out: GeoSheet[] = [];
   for (let r = 1; r <= GRID_ROWS; r++) {
@@ -93,6 +100,7 @@ export const geoloskeKarte: GeoSheet[] = (() => {
       const maxLon = minLon + CELL_SIZE;
       const maxLat = GRID_ORIGIN_LAT - (r - 1) * CELL_SIZE;
       const minLat = maxLat - CELL_SIZE;
+      if (EXCLUDED.has(key)) continue;
       if (!cellIntersectsBiH(minLon, minLat, maxLon, maxLat)) continue;
       const named = NAMED[key];
       out.push({
