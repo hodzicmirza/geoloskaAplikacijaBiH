@@ -86,9 +86,9 @@ const cellIntersectsBiH = (a: number, b: number, c: number, d: number) =>
 
 // Ručno isključene ćelije (more / izvan BiH u donjem lijevom L obliku)
 const EXCLUDED = new Set([
-  "r3c1", "r4c1", "r5c1", "r6c1",
+  "r3c1", "r4c1", "r4c2", "r5c1", "r6c1",
   "r5c2", "r5c3",
-  "r6c2", "r6c3", "r6c4",
+  "r6c2", "r6c3", "r6c4", "r6c8",
 ]);
 
 export const geoloskeKarte: GeoSheet[] = (() => {
