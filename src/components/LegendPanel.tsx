@@ -14,7 +14,7 @@ const LegendPanel = ({ sheets, onSelect }: Props) => {
   return (
     <aside
       className={cn(
-        "absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-20 w-[200px] sm:w-[220px]",
+        "absolute right-3 sm:right-4 top-20 sm:top-24 z-20 w-[200px] sm:w-[220px]",
         "bg-card/95 backdrop-blur border border-border rounded-lg shadow-elegant"
       )}
     >
