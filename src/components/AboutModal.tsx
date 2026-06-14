@@ -44,16 +44,16 @@ const AboutModal = ({ open, onClose }: Props) => {
             </div>
 
             <div className="p-8 space-y-4">
-              <Row label="Autor"      value="Vaše Ime" />
+              <Row label="Autori"     value="Mirza Hodžić, Faris Mušija" />
               <Row label="Godina"     value="2026" />
               <Row label="Izvor karata" value="Geološki zavod Bosne i Hercegovine" />
               <Row label="Granice"    value="geoBoundaries (gbOpen, ADM1)" />
               <Row label="Tehnologija" value="React · OpenLayers · Tailwind" />
 
               <div className="pt-4 border-t border-border flex flex-wrap gap-2">
-                <Link icon={<BookOpen size={14} />} text="Dokumentacija" />
-                <Link icon={<Github size={14} />}   text="GitHub" />
-                <Link icon={<Mail size={14} />}     text="Kontakt" />
+                <Link icon={<BookOpen size={14} />} text="Dokumentacija" href="https://github.com/hodzicmirza/geoloskaAplikacijaBiH#readme" />
+                <Link icon={<Github size={14} />}   text="GitHub" href="https://github.com/hodzicmirza/geoloskaAplikacijaBiH" />
+                <Link icon={<Mail size={14} />}     text="Kontakt" href="mailto:mhodzic6@etf.unsa.ba" />
               </div>
             </div>
 
@@ -78,10 +78,10 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const Link = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
-  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted hover:bg-primary/10 hover:text-primary text-xs font-mono uppercase tracking-wider transition-colors">
+const Link = ({ icon, text, href }: { icon: React.ReactNode; text: string; href: string }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted hover:bg-primary/10 hover:text-primary text-xs font-mono uppercase tracking-wider transition-colors">
     {icon} {text}
-  </button>
+  </a>
 );
 
 export default AboutModal;

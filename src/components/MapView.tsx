@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import OLMap from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
@@ -12,6 +13,7 @@ import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
 import { Style, Stroke, Fill, Text } from "ol/style";
 import { fromLonLat, transformExtent, toLonLat } from "ol/proj";
+import { defaults as defaultControls } from "ol/control/defaults";
 import "ol/ol.css";
 import { Info, ChevronUp } from "lucide-react";
 import { geoloskeKarte, type GeoSheet } from "@/lib/geoloskeKarte";
@@ -24,10 +26,10 @@ import { cn } from "@/lib/utils";
 type Filter = "ALL" | EntityCode;
 
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: "ALL",  label: "Sve granice" },
+  { value: "ALL", label: "Sve granice" },
   { value: "FBiH", label: "Federacija BiH" },
-  { value: "RS",   label: "Republika Srpska" },
-  { value: "BD",   label: "Brčko Distrikt" },
+  { value: "RS", label: "Republika Srpska" },
+  { value: "BD", label: "Brčko Distrikt" },
 ];
 
 const MapView = () => {
@@ -42,6 +44,12 @@ const MapView = () => {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [aboutOpen, setAboutOpen] = useState(false);
   const [entitiesOpen, setEntitiesOpen] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialLoading(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handlePointer = useCallback((e: any) => {
     const [lon, lat] = toLonLat(e.coordinate);
@@ -127,10 +135,11 @@ const MapView = () => {
     });
     borderLayerRef.current = borderLayer;
 
-    const viewExtent = transformExtent([14.5, 41.8, 21.5, 46.5], "EPSG:4326", "EPSG:3857");
+    const viewExtent = transformExtent([15.0, 42.0, 20.0, 45.5], "EPSG:4326", "EPSG:3857");
 
     const map = new OLMap({
       target: mapEl.current,
+      controls: defaultControls({ attribution: false }),
       layers: [
         new TileLayer({ source: new OSM(), opacity: 0.5 }),
         ...imgLayers,
@@ -139,8 +148,8 @@ const MapView = () => {
       ],
       view: new View({
         center: fromLonLat([17.789, 44.0]),
-        zoom: 7.4,
-        minZoom: 6.5,
+        zoom: 6.8,
+        minZoom: 6.0,
         maxZoom: 14,
         extent: viewExtent,
       }),
@@ -168,8 +177,8 @@ const MapView = () => {
   }, [filter]);
 
   return (
-    <div className="relative w-full h-screen bg-gradient-parchment overflow-hidden">
-      <div ref={mapEl} className="absolute inset-0" aria-label="Geološka karta Bosne i Hercegovine" />
+    <div className="relative w-full h-[100dvh] bg-gradient-parchment overflow-hidden">
+      <div ref={mapEl} className="absolute inset-0 touch-none" aria-label="Geološka karta Bosne i Hercegovine" />
 
       {/* Kompaktan header */}
       <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
@@ -242,6 +251,27 @@ const MapView = () => {
       <LegendPanel sheets={geoloskeKarte.filter(s => s.imageUrl)} onSelect={setActive} />
       <SheetModal sheet={active} onClose={() => setActive(null)} />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+
+      <AnimatePresence>
+        {initialLoading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
+            className="fixed inset-0 z-[100] bg-gradient-parchment flex flex-col items-center justify-center backdrop-blur-sm"
+          >
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-primary/30 rounded-full"></div>
+              <div className="absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-md"></div>
+            </div>
+            <h2 className="mt-8 font-serif text-2xl lg:text-3xl font-semibold text-foreground tracking-wide animate-pulse">
+              Učitavanje geoloških karata
+            </h2>
+            <p className="font-mono text-[10px] sm:text-xs tracking-[0.25em] uppercase text-muted-foreground mt-4">
+              Molimo pričekajte...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

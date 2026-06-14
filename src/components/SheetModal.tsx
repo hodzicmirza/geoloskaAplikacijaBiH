@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Calendar, Ruler, Download, ImageOff } from "lucide-react";
-import type { GeoSheet } from "@/lib/geoloskeKarte";
-import { useEffect } from "react";
+import { X, MapPin, Calendar, Ruler, Download, ImageOff, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 type Props = {
   sheet: GeoSheet | null;
@@ -15,22 +16,17 @@ const SheetModal = ({ sheet, onClose }: Props) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const handleDownload = async () => {
-    if (!sheet?.imageUrl) return;
-    try {
-      const res = await fetch(sheet.imageUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${sheet.code}_${sheet.name.replace(/\s+/g, "-")}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleDownload = () => {
+    const downloadUrl = sheet?.modalUrl || sheet?.imageUrl;
+    if (!downloadUrl) return;
+    
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${sheet.code}_${sheet.name.replace(/\s+/g, "-")}.jpg`;
+    a.target = "_blank"; // Fallback if download attribute is not fully supported
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -44,7 +40,7 @@ const SheetModal = ({ sheet, onClose }: Props) => {
           onClick={onClose}
         >
           <motion.div
-            className="relative w-full max-w-6xl max-h-[92vh] overflow-hidden rounded-lg bg-card shadow-elegant border border-border grid grid-cols-1 lg:grid-cols-[1.5fr_1fr]"
+            className="relative w-full max-w-[95vw] lg:max-w-7xl max-h-[95vh] overflow-hidden rounded-lg bg-card shadow-elegant border border-border grid grid-cols-1 lg:grid-cols-[3.5fr_1fr]"
             initial={{ opacity: 0, scale: 0.94, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -53,11 +49,10 @@ const SheetModal = ({ sheet, onClose }: Props) => {
           >
             <div className="relative bg-foreground/5 flex items-center justify-center p-4 lg:p-6 max-h-[50vh] lg:max-h-[92vh]">
               {sheet.imageUrl ? (
-                <img
-                  src={sheet.imageUrl}
-                  alt={`Geološki list ${sheet.name}`}
-                  loading="lazy"
-                  className="max-w-full max-h-full object-contain rounded shadow-soft"
+                <ProgressiveImage 
+                  lowRes={sheet.imageUrl} 
+                  highRes={sheet.modalUrl} 
+                  alt={`Geološki list ${sheet.name}`} 
                 />
               ) : (
                 <div className="text-center px-6 py-12 text-muted-foreground">
@@ -82,7 +77,7 @@ const SheetModal = ({ sheet, onClose }: Props) => {
             </div>
 
             <div className="flex flex-col overflow-y-auto bg-gradient-parchment">
-              <div className="p-6 lg:p-8 border-b border-border">
+              <div className="p-6 lg:p-8 border-b border-border flex-1">
                 <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-primary/80 mb-2">
                   {sheet.region}
                 </p>
@@ -93,45 +88,21 @@ const SheetModal = ({ sheet, onClose }: Props) => {
                   {sheet.description}
                 </p>
 
-                <div className="mt-5 grid grid-cols-3 gap-3 text-xs">
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
                   <Meta icon={<Ruler size={14} />} label="Razmjera" value={sheet.scale} />
                   <Meta icon={<Calendar size={14} />} label="Godina" value={String(sheet.year)} />
                   <Meta icon={<MapPin size={14} />} label="Šifra" value={sheet.code} />
                 </div>
-              </div>
-
-              <div className="p-6 lg:p-8">
-                <h3 className="font-serif text-lg font-semibold text-foreground mb-4 flex items-baseline gap-3">
-                  Tumač geoloških jedinica
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                    Legenda
-                  </span>
-                </h3>
-                <ul className="space-y-2.5">
-                  {sheet.legend.map((unit) => (
-                    <li
-                      key={unit.code}
-                      className="flex items-start gap-3 p-3 rounded-md bg-card/60 border border-border/60 hover:border-primary/40 transition-colors"
-                    >
-                      <span
-                        className="mt-0.5 w-8 h-8 rounded-sm border border-foreground/20 shrink-0 shadow-soft"
-                        style={{ backgroundColor: `hsl(${unit.color})` }}
-                        aria-hidden
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-serif text-base font-semibold text-foreground">
-                            {unit.name}
-                          </span>
-                          <span className="font-mono text-xs text-primary shrink-0">
-                            {unit.code}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{unit.age}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                
+                <div className="mt-8 p-4 bg-primary/5 rounded-md border border-primary/20 text-sm text-foreground/80">
+                  <p className="flex items-center gap-2 font-medium mb-1">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    Kako očitati legendu?
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Koristite točkić miša, dvostruki klik ili pinch-to-zoom (na telefonu) za zumiranje i detaljan pregled legende. Kartu možete slobodno prevlačiti (pan).
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -157,5 +128,64 @@ const Meta = ({ icon, label, value }: { icon: React.ReactNode; label: string; va
     <span className="font-serif text-sm font-semibold text-foreground">{value}</span>
   </div>
 );
+
+const ProgressiveImage = ({ lowRes, highRes, alt }: { lowRes: string; highRes?: string; alt: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [src, setSrc] = useState(lowRes);
+
+  useEffect(() => {
+    setLoaded(false);
+    setSrc(lowRes);
+    
+    if (highRes && highRes !== lowRes) {
+      const img = new Image();
+      img.src = highRes;
+      img.onload = () => {
+        if (img.decode) {
+          img.decode().then(() => {
+            setSrc(highRes);
+            setLoaded(true);
+          }).catch(() => {
+            setSrc(highRes);
+            setLoaded(true);
+          });
+        } else {
+          setSrc(highRes);
+          setLoaded(true);
+        }
+      };
+    } else {
+      setLoaded(true);
+    }
+  }, [lowRes, highRes]);
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <TransformWrapper
+        initialScale={1}
+        minScale={1}
+        maxScale={6}
+        centerOnInit={true}
+        wheel={{ step: 0.15 }}
+        doubleClick={{ step: 1.5 }}
+      >
+        <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+          <img
+            src={src}
+            alt={alt}
+            className="max-w-full max-h-full object-contain rounded shadow-soft transition-opacity duration-300"
+            style={{ opacity: loaded ? 1 : 0.6 }}
+          />
+        </TransformComponent>
+      </TransformWrapper>
+
+      {!loaded && highRes && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/10 backdrop-blur-[1px] rounded pointer-events-none z-10">
+          <Loader2 className="w-8 h-8 text-primary animate-spin shadow-md" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default SheetModal;
