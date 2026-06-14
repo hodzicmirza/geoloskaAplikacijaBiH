@@ -47,7 +47,7 @@ const MapView = () => {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setInitialLoading(false), 5000);
+    const timer = setTimeout(() => setInitialLoading(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
