@@ -13,6 +13,7 @@ import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
 import { Style, Stroke, Fill, Text } from "ol/style";
 import { fromLonLat, transformExtent, toLonLat } from "ol/proj";
+import { intersects } from "ol/extent";
 import { defaults as defaultControls } from "ol/control/defaults";
 import "ol/ol.css";
 import { Info, ChevronUp } from "lucide-react";
@@ -81,14 +82,16 @@ const MapView = () => {
 
     const imgLayers = geoloskeKarte
       .filter(s => s.imageUrl)
-      .map(sheet => new ImageLayer({
-        opacity: 0.88,
-        source: new Static({
-          url: sheet.imageUrl!,
-          imageExtent: transformExtent(sheet.extent, "EPSG:4326", "EPSG:3857"),
-          projection: "EPSG:3857",
-        }),
-      }));
+      .map(sheet => {
+        const ext = transformExtent(sheet.extent, "EPSG:4326", "EPSG:3857");
+        const layer = new ImageLayer({
+          opacity: 0.88,
+          extent: ext,
+        });
+        layer.set("sheet", sheet);
+        layer.set("ext", ext);
+        return layer;
+      });
 
     const gridLayer = new VectorLayer({
       source: new VectorSource({ features: gridFeatures }),
@@ -141,7 +144,7 @@ const MapView = () => {
       target: mapEl.current,
       controls: defaultControls({ attribution: false }),
       layers: [
-        new TileLayer({ source: new OSM(), opacity: 0.5 }),
+        new TileLayer({ source: new OSM(), opacity: 0.5, preload: Infinity }),
         ...imgLayers,
         gridLayer,
         borderLayer,
@@ -159,9 +162,31 @@ const MapView = () => {
     map.on("pointermove", handlePointer);
     map.on("click", handleClick);
 
+    const loadVisibleLayers = () => {
+      const size = map.getSize();
+      if (!size) return;
+      const viewExtent = map.getView().calculateExtent(size);
+      imgLayers.forEach(layer => {
+        if (layer.getSource()) return; // Already loaded
+        const ext = layer.get("ext");
+        if (intersects(viewExtent, ext)) {
+          const sheet = layer.get("sheet") as GeoSheet;
+          layer.setSource(new Static({
+            url: sheet.imageUrl!,
+            imageExtent: ext,
+            projection: "EPSG:3857",
+          }));
+        }
+      });
+    };
+
+    map.on("moveend", loadVisibleLayers);
+    setTimeout(loadVisibleLayers, 100); // Initial check
+
     return () => {
       map.un("pointermove", handlePointer);
       map.un("click", handleClick);
+      map.un("moveend", loadVisibleLayers);
       map.setTarget(undefined);
       mapInstance.current = null;
       document.body.style.cursor = "";
